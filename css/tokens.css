@@ -1,0 +1,95 @@
+/* WalkLog 디자인 토큰 — 피그마 'WalkLog Home' 변수 모음(여름 필름 모드)에서 옮김 */
+/* Claude 아티팩트는 외부 CDN 글꼴을 막아서 Pretendard를 파일로 함께 둔다 */
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/PretendardVariable.woff2") format("woff2");
+}
+
+:root {
+  /* base */
+  --cream: #FBF8F2;
+  --surface: #FFFFFF;
+  --ink: #1C1B1A;
+  --ink-2: #57514A;
+  --ink-3: #6E675D;
+  --hairline: #E9E3D8;
+  --route-day: #CFC7BA;
+  --on-dark: #FFFFFF;
+  --dim: rgba(28, 27, 26, 0.45);
+
+  /* widget 4색: 토마토 = 내 로그, 코발트 = 남의 로그 */
+  --tomato: #FF5A36;
+  --cobalt: #2F5BFF;
+  --lemon: #FFD43B;
+  --mint: #2BD9A0;
+  --danger: #C9381A;
+
+  /* 주머니(남의 프로필 로그 묶음) 옅은 색 */
+  --pocket-apricot: #FFC9A8;
+  --pocket-sky: #BFD3FF;
+  --pocket-lemon: #FFE89A;
+  --pocket-pink: #FFD0D6;
+  --pocket-mint: #BDF2DD;
+  --pocket-lime: #D9F0A8;
+  --pocket-water: #C6E8F0;
+
+  /* 지도 탭 어두운 판 */
+  --map-bg: #151515;
+  --map-ink: #FBF8F2;
+  --map-ink-2: #9A9A9A;
+  --map-surface: #1C1C1C;
+  --map-hairline: #5A5A5A;
+
+  /* 지도 그림 (로그 안 작은 지도, 지도 화면) */
+  --map-land: #ECE6DA;
+  --map-road: #FFFFFF;
+  --map-park: #D9E5C8;
+  --map-water: #D3E1EA;
+
+  /* 글꼴 */
+  --font-ko: "Pretendard Variable", Pretendard, "Gothic A1", system-ui, sans-serif;
+  --font-num-a: "Bricolage Grotesque", var(--font-ko);
+  --font-num-b: "Doto", ui-monospace, monospace;
+  --font-en: "Red Hat Display", var(--font-ko);
+
+  /* 간격 */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --gutter: 20px;
+
+  /* 모서리 */
+  --radius-chip: 12px;
+  --radius-card: 16px;
+  --radius-modal: 20px;
+  --radius-widget: 24px;
+  --radius-sheet: 24px;
+  --radius-full: 999px;
+
+  /* 그림자 */
+  --shadow-sheet: 0 -2px 12px rgba(27, 26, 25, 0.08);
+  --shadow-float: 0 4px 16px rgba(27, 26, 25, 0.14);
+  --shadow-card: 0 8px 24px rgba(27, 26, 25, 0.12);
+  --shadow-marker: 0 3px 10px rgba(27, 26, 25, 0.2);
+
+  /* 움직임 */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-fast: 160ms;
+  --dur: 240ms;
+  --dur-slow: 420ms;
+
+  /* 앱 틀 */
+  --app-width: 480px;
+  --nav-h: 60px;
+  --nav-bottom: 20px;
+}
