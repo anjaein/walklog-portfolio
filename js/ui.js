@@ -214,5 +214,72 @@ window.WL = window.WL || {};
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver); else startObserver();
 
-  WL.ui = { drawCourses, icon, course, pointAt, mapBg, navbar, toast, fmt, esc, colorVar, onColor, avatar, overlay };
+  /* 다이얼 눈금(멈춤쇠) 느낌: 짧은 진동 + 딸깍 소리. 화면마다 detent()로 만들고 나갈 때 destroy() */
+  let ac = null;
+  let noise = null;
+  function wakeAudio() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!ac) {
+        ac = new AC();
+        const n = Math.floor(ac.sampleRate * 0.022);
+        noise = ac.createBuffer(1, n, ac.sampleRate);
+        const ch = noise.getChannelData(0);
+        for (let i = 0; i < n; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+      }
+      if (ac.state === 'suspended') ac.resume();
+    } catch (e) { /* 소리는 덤 */ }
+  }
+  function clickSound() {
+    /* 자동재생 정책: 사용자 동작(wake) 없이 여기서 새로 만들지 않는다 */
+    if (!ac || ac.state !== 'running') return;
+    try {
+      const t = ac.currentTime;
+      const src = ac.createBufferSource();
+      src.buffer = noise;
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 3000 + Math.random() * 500;
+      bp.Q.value = 1.4;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.1, t);
+      g.gain.exponentialRampToValueAtTime(0.0005, t + 0.018);
+      src.connect(bp).connect(g).connect(ac.destination);
+      src.start(t);
+      src.stop(t + 0.025);
+    } catch (e) { /* 소리는 덤 */ }
+  }
+  function detent() {
+    /* iOS 18+ Safari 는 vibrate 가 없지만, <input switch> 를 label 로 누르면 시스템 햅틱이 난다 */
+    let label = null;
+    try {
+      label = document.createElement('label');
+      label.setAttribute('aria-hidden', 'true');
+      label.style.display = 'none';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.setAttribute('switch', '');
+      input.tabIndex = -1;
+      label.appendChild(input);
+      document.body.appendChild(label);
+    } catch (e) { label = null; }
+    let last = 0;
+    return {
+      wake: wakeAudio,
+      tick() {
+        const now = performance.now();
+        if (now - last < 25) return;
+        last = now;
+        /* 한 번도 누르기 전엔 크롬이 진동을 막고 콘솔에 오류를 찍어서 건너뛴다 */
+        const active = !navigator.userActivation || navigator.userActivation.hasBeenActive;
+        try { if (navigator.vibrate && active) navigator.vibrate(8); } catch (e) { /* 막힌 기기 */ }
+        try { if (label) label.click(); } catch (e) { /* 막힌 기기 */ }
+        clickSound();
+      },
+      destroy() { if (label) label.remove(); label = null; },
+    };
+  }
+
+  WL.ui = { drawCourses, icon, course, pointAt, mapBg, navbar, toast, fmt, esc, colorVar, onColor, avatar, overlay, detent };
 })();

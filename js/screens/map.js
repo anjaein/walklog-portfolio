@@ -204,6 +204,10 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
   const R = 300;
   const STEP = 15 * (Math.PI / 180);
   const STEP_PX = R * Math.sin(STEP);
+  /* 놓은 뒤 관성: 속도가 e^(-t/TAU) 로 줄어든다고 보고 멈출 곳을 미리 정한다.
+     UIScrollView 기본값(0.998/ms, TAU≈500ms)은 1.3초 안에 끝내기엔 꼬리가 길어 조금 무겁게 */
+  const TAU = 325;
+  const DECAY = 4;
 
   function metaLine(c) {
     return `${esc(c.handle)} · ${numb(c.km.toFixed(1))}km · ${numb(c.minutes)}분${c.note ? ' · ' + numb(c.note) : ''}`;
@@ -252,6 +256,9 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
       let textIdx = -1;
       let raf = 0;
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const clampIdx = (p) => Math.max(0, Math.min(list.length - 1, Math.round(p)));
+      const detent = WL.ui.detent();
+      let tickIdx = clampIdx(pos);
 
       function setText(i) {
         if (i === textIdx) return;
@@ -272,16 +279,24 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
           el.style.animationDelay = `${(0.12 + 1.1 * (1 - Math.pow(1 - at, 0.45)) * 0.9).toFixed(2)}s`;
         });
       }
-      function drawBig(i) {
+      function drawBig(i, anim = true) {
         if (i === shown) return;
         shown = i;
         state.idx = i;
         big.classList.remove('is-anim');
-        big.innerHTML = bigCourse(list[i], true);
+        big.innerHTML = bigCourse(list[i], anim);
+        if (!anim) return;
         void big.offsetWidth;
         big.classList.add('is-anim');
         stagger();
         drawIn(big.querySelector('svg path:last-of-type'));
+      }
+      /* 스크롤 · 끌기 · 쓸기로 넘길 땐 지나가는 칸마다 그림을 바로 바꾸고, 눌러서 고를 땐 고른 코스를 그려 나가는 애니메이션으로 */
+      let quick = true;
+      function pick(i) {
+        quick = false;
+        drawBig(Math.max(0, Math.min(list.length - 1, i)), true);
+        animateTo(i);
       }
       stagger();
       drawIn(big.querySelector('svg path:last-of-type'));
@@ -320,22 +335,32 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
           t += `<line x1="${(cx + (R - 6) * s).toFixed(1)}" y1="${(cy - (R - 6) * co).toFixed(1)}" x2="${(cx + (R + 6) * s).toFixed(1)}" y2="${(cy - (R + 6) * co).toFixed(1)}"/>`;
         }
         ticks.innerHTML = t;
-        setText(Math.max(0, Math.min(list.length - 1, Math.round(pos))));
+        const i = clampIdx(pos);
+        if (i !== tickIdx) { tickIdx = i; detent.tick(); if (quick) drawBig(i, false); }
+        setText(i);
       }
 
-      function animateTo(target) {
+      /* v0(칸/ms)를 주면 놓은 순간 속도를 이어받아 지수 감속으로 멈춘다 → 눈금이 점점 느리게 지나감 */
+      function animateTo(target, v0) {
         target = Math.max(0, Math.min(list.length - 1, target));
         cancelAnimationFrame(raf);
         const from = pos;
-        const dur = reduce ? 1 : Math.min(520, 260 + Math.abs(target - from) * 90);
+        const dist = target - from;
+        let dur = Math.min(520, 260 + Math.abs(dist) * 90);
+        let ease = (x) => 1 - Math.pow(1 - x, 3);
+        if (v0 && dist * v0 > 0) {
+          const norm = 1 - Math.exp(-DECAY);
+          dur = Math.max(280, Math.min(1350, (dist * DECAY) / (norm * v0)));
+          ease = (x) => (1 - Math.exp(-DECAY * x)) / norm;
+        }
+        if (reduce) dur = 1;
         const t0 = performance.now();
-        const ease = (x) => 1 - Math.pow(1 - x, 3);
         const tick = (now) => {
           const k = Math.min(1, (now - t0) / dur);
           pos = from + (target - from) * ease(k);
           layout();
           if (k < 1) raf = requestAnimationFrame(tick);
-          else { pos = target; layout(); drawBig(target); }
+          else { pos = target; layout(); drawBig(target, !quick); }
         };
         raf = requestAnimationFrame(tick);
       }
@@ -343,7 +368,9 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
       /* 다이얼 끌기: 원을 따라 돌리고, 놓으면 속도만큼 더 돈 뒤 한 칸에 멈춤 */
       let drag = null;
       dial.addEventListener('pointerdown', (e) => {
+        detent.wake();
         cancelAnimationFrame(raf);
+        quick = true;
         drag = { x: e.clientX, pos0: pos, moved: 0, v: 0, lx: e.clientX, lt: performance.now(), target: e.target.closest('.mp-di') };
         dial.setPointerCapture(e.pointerId);
       });
@@ -365,20 +392,25 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
       });
       const end = () => {
         if (!drag) return;
+        detent.wake();
         const g = drag;
         drag = null;
         if (g.moved < 6) {
-          animateTo(g.target ? +g.target.dataset.i : Math.round(pos));
+          if (g.target) pick(+g.target.dataset.i); else animateTo(Math.round(pos));
           return;
         }
-        const fling = (-g.v * 160) / STEP_PX;
-        animateTo(Math.round(pos + Math.max(-2, Math.min(2, fling))));
+        const max = list.length - 1;
+        /* 손을 멈췄다 떼면 마지막 move 의 속도가 남아 있으므로 버린다 */
+        const v = performance.now() - g.lt > 90 ? 0 : -g.v / STEP_PX;
+        if (pos < 0 || pos > max || Math.abs(v) * STEP_PX < 0.2) { animateTo(Math.round(pos)); return; }
+        animateTo(Math.round(pos + v * TAU), v);
       };
       dial.addEventListener('pointerup', end);
       dial.addEventListener('pointercancel', end);
       dial.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') { e.preventDefault(); animateTo(Math.round(pos) + 1); }
-        if (e.key === 'ArrowLeft') { e.preventDefault(); animateTo(Math.round(pos) - 1); }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') detent.wake();
+        if (e.key === 'ArrowRight') { e.preventDefault(); pick(Math.round(pos) + 1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); pick(Math.round(pos) - 1); }
       });
 
       /* 큰 코스 위에서 옆으로 쓸어도 넘어감 */
@@ -387,15 +419,37 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
       bigBox.addEventListener('pointerdown', (e) => { sw = { x: e.clientX, y: e.clientY }; });
       bigBox.addEventListener('pointerup', (e) => {
         if (!sw) return;
+        detent.wake();
         const dx = e.clientX - sw.x;
-        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(e.clientY - sw.y)) animateTo(Math.round(pos) + (dx < 0 ? 1 : -1));
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(e.clientY - sw.y)) { quick = true; animateTo(Math.round(pos) + (dx < 0 ? 1 : -1)); }
         sw = null;
       });
+
+      /* 트랙패드 가로 스크롤(휠): 화면 어디서든 돌린다. 트랙패드가 관성까지 휠 이벤트로 보내 주므로 눈금이 저절로 점점 느려진다.
+         휠은 사용자 동작으로 치지 않아서, 소리는 화면을 한 번 누른 뒤부터 난다 */
+      let wheelEnd = 0;
+      const onWheel = (e) => {
+        const horiz = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+        const d = horiz ? e.deltaX : (e.target.closest('.mp-dial') ? e.deltaY : 0);
+        if (!d) return;
+        e.preventDefault();
+        detent.wake();
+        cancelAnimationFrame(raf);
+        quick = true;
+        const max = list.length - 1;
+        pos = Math.max(-0.3, Math.min(max + 0.3, pos + (e.deltaMode === 1 ? d * 16 : d) / STEP_PX));
+        layout();
+        clearTimeout(wheelEnd);
+        wheelEnd = setTimeout(() => animateTo(Math.round(pos)), 120);
+      };
+      root.addEventListener('wheel', onWheel, { passive: false });
+      const onPress = () => detent.wake();
+      root.addEventListener('pointerdown', onPress);
 
       layout();
       const onResize = () => layout();
       window.addEventListener('resize', onResize);
-      return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); };
+      return () => { cancelAnimationFrame(raf); clearTimeout(wheelEnd); window.removeEventListener('resize', onResize); detent.destroy(); };
     },
   };
 
