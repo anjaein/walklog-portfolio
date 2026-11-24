@@ -58,7 +58,8 @@
 .h-mini-archive.is-fresh .h-postcard { opacity: 0.45; box-shadow: none; }
 
 /* 카드 더미: 앞 카드 반듯, 뒤 카드 둘은 같은 크기 사진 카드가 위로 고개를 내밀고 서로 반대로 기운다 */
-.h-deck { position: relative; margin-top: 12px; outline-offset: 6px; border-radius: 24px; }
+/* 맨 뒤 카드가 1.6° 기울어 한쪽 모서리가 6px 솟는다: 그 모서리 ~ 위젯 아래 끝이 위젯끼리 간격(12px)과 같도록 12 + 6 */
+.h-deck { position: relative; margin-top: 18px; outline-offset: 6px; border-radius: 24px; }
 .h-deck-stage { position: relative; margin: 0 12px; padding-top: 54px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .h-deck-stage::after { content: ""; display: block; aspect-ratio: 338 / 198; }
 .h-card {
