@@ -479,3 +479,9 @@ textarea.rc-input { height: 120px; padding: 14px 16px; resize: none; line-height
 
 /* 한국어 줄바꿈은 어절 단위로 */
 .mp-card, .mp-view, .rc-time, .rc-course, .rc-panel, .rc-done { word-break: keep-all; overflow-wrap: break-word; }
+
+/* 로그 수정: 글쓰기 화면 모양 그대로, 위 지도는 그 로그의 코스를 보여 주기만 한다 */
+.rc-course.rc-editing .rc-mapwrap { height: clamp(150px, calc((100vw - 40px) * 0.442), 200px); max-height: 200px; cursor: default; }
+.rc-editmap { position: absolute; inset: 0; }
+.rc-editmap .course { position: absolute; inset: 0; }
+.mp-vback { position: absolute; top: 14px; left: var(--gutter); z-index: 6; }

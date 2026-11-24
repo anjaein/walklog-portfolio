@@ -30,7 +30,7 @@
 .h-today-min .d-big { line-height: 32px; }
 .h-today-min .t-label { color: var(--ink); }
 .h-today-pic { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 2px; }
-.h-today-course { position: absolute; right: 12px; top: 70px; width: 44%; max-width: 200px; height: 120px; --cs-fill: var(--tomato); }
+.h-today-course { position: absolute; right: 12px; top: 64px; width: 44%; max-width: 200px; height: 100px; --cs-fill: var(--tomato); }
 .h-today-day { position: absolute; inset: 0; }
 .h-today-origin { position: absolute; left: 66%; top: 50%; width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 2.5px var(--ink); }
 
@@ -59,7 +59,7 @@
 
 /* 카드 더미: 앞 카드 반듯, 뒤 카드 둘은 같은 크기 사진 카드가 위로 고개를 내밀고 서로 반대로 기운다 */
 .h-deck { position: relative; margin-top: 12px; outline-offset: 6px; border-radius: 24px; }
-.h-deck-stage { position: relative; margin: 0 12px; padding-top: 48px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.h-deck-stage { position: relative; margin: 0 12px; padding-top: 54px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .h-deck-stage::after { content: ""; display: block; aspect-ratio: 338 / 198; }
 .h-card {
   position: absolute; left: 0; right: 0; top: 48px; aspect-ratio: 338 / 198;
@@ -79,9 +79,9 @@
 .h-card-meta .h-num { color: var(--on-dark); }
 
 .h-card[data-slot="0"] { z-index: 3; transform: none; box-shadow: var(--shadow-card); cursor: grab; }
-.h-card[data-slot="1"] { z-index: 2; transform: translateY(-28px) rotate(-2.6deg); }
-.h-card[data-slot="2"] { z-index: 1; transform: translateY(-42px) rotate(2deg); }
-.h-card[data-slot="3"] { z-index: 0; transform: translateY(-52px) rotate(3deg); opacity: 0; }
+.h-card[data-slot="1"] { z-index: 2; transform: translateY(-24px) rotate(-1.8deg); }
+.h-card[data-slot="2"] { z-index: 1; transform: translateY(-48px) rotate(1.6deg); }
+.h-card[data-slot="3"] { z-index: 0; transform: translateY(-58px) rotate(2.4deg); opacity: 0; }
 .h-card[data-slot="1"] .h-card-shade { opacity: 0.15; }
 .h-card[data-slot="2"] .h-card-shade, .h-card[data-slot="3"] .h-card-shade { opacity: 0.3; }
 .h-card:not([data-slot="0"]) .h-card-label, .h-card:not([data-slot="0"])::before { opacity: 1; }

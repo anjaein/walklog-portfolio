@@ -229,11 +229,101 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
     },
   };
 
+  /* ========== 등록: 고른 구간을 새 로그로 만들어 내 로그 맨 앞에 넣는다 ========== */
+  let newSeq = 0;
+  function commit(d) {
+    if (d.savedId) return d.savedId;
+    let pts = M.seg(REC.track, frac(d.start), frac(d.end));
+    if (pts.length < 2) pts = REC.track;
+    /* 로그 카드 칸(0~100)에 맞게 펴기. 한쪽 폭이 거의 없으면 가운데에 둔다 */
+    const fit = (vals) => {
+      const lo = Math.min(...vals), hi = Math.max(...vals);
+      return hi - lo < 1 ? vals.map(() => 50) : vals.map((v) => 8 + ((v - lo) / (hi - lo)) * 84);
+    };
+    const xs = fit(pts.map((p) => p[0])), ys = fit(pts.map((p) => p[1]));
+    const id = `l-new${++newSeq}`;
+    WL.data.shapes[id] = xs.map((x, i) => [+x.toFixed(2), +ys[i].toFixed(2)]);
+    const inside = logPhotos(d).sort((a, b) => a.time - b.time);
+    const pics = inside.length ? inside : sorted(d).slice(0, 1);
+    const len = Math.max(1, d.end - d.start);
+    const log = {
+      id, title: d.title.trim() || REC.title, date: T.date, dow: T.dow,
+      start: M.hm(d.start), end: M.hm(d.end), minutes: d.end - d.start, km: +kmOf(d).toFixed(1),
+      place: WL.data.me.area || '', shape: id, text: d.body.trim(), visibility: d.vis, likes: 0, saves: 0,
+      photos: pics.map((p) => ({ src: p.src, at: clamp((p.time - d.start) / len, 0.03, 0.97), time: M.hm(p.time) })),
+    };
+    WL.data.myLogs.unshift(log);
+    WL.hx.deckIndex = 0;
+    d.savedId = id;
+    return id;
+  }
+
+  /* ========== 로그 수정 (로그 상세 메뉴 → 수정) ========== */
+  function editRender(log) {
+    const thumbs = log.photos.length >= 3
+      ? [log.photos[0], log.photos[Math.floor(log.photos.length / 2)], log.photos[log.photos.length - 1]]
+      : log.photos;
+    return `<div class="rc-course is-write rc-editing">
+        <header class="rc-head">
+          <button type="button" class="icon-btn rc-back" aria-label="뒤로">${icon('back')}</button>
+          <h1 class="t-title">로그 수정</h1>
+        </header>
+        <div class="rc-mapwrap" aria-hidden="true">
+          <div class="rc-map">${WL.ui.mapBg(log.id.length + 7, { water: log.shape === 'hangang' || log.shape === 'river' ? 78 : 0 })}
+            <div class="rc-editmap">${WL.ui.course(log.shape, { color: 'var(--tomato)', width: 4, pad: 12, thumbs: thumbs.map((p) => ({ src: p.src, at: p.at })) })}</div>
+          </div>
+        </div>
+        <section class="rc-write" aria-label="글 수정">
+          <p class="rc-wmeta"><span class="rc-stamp">${log.start} – ${log.end}</span><span><b class="mp-num">${log.minutes}</b>분 · <b class="mp-num">${log.km.toFixed(1)}</b>km · 사진 <b class="mp-num">${log.photos.length}</b></span></p>
+          <div class="rc-mini">${log.photos.map((p, i) => `<img src="${p.src}" alt="" style="--i:${i}">`).join('')}</div>
+          <div class="rc-field"><label class="t-label-b" for="rc-title">제목</label><input id="rc-title" class="rc-input" maxlength="40" value="${esc(log.title)}" autocomplete="off"></div>
+          <div class="rc-field"><label class="t-label-b" for="rc-body">설명</label><textarea id="rc-body" class="rc-input" maxlength="500">${esc(log.text)}</textarea></div>
+          <div class="rc-field"><p class="t-label-b">공개 범위</p>
+            <div class="rc-seg ${log.visibility === 'private' ? 'is-private' : ''}" role="group" aria-label="공개 범위">
+              <button type="button" data-vis="public" aria-pressed="${log.visibility !== 'private'}">${icon('globe', 20)}공개</button>
+              <button type="button" data-vis="private" aria-pressed="${log.visibility === 'private'}">${icon('lock', 20)}나만 보기</button>
+            </div>
+          </div>
+        </section>
+        <div class="rc-foot"><button type="button" class="pill ink block rc-go" disabled>저장</button></div>
+      </div>`;
+  }
+  function editMount(root, log) {
+    const go = root.querySelector('.rc-go');
+    const title = root.querySelector('#rc-title');
+    const body = root.querySelector('#rc-body');
+    const seg = root.querySelector('.rc-seg');
+    let vis = log.visibility === 'private' ? 'private' : 'public';
+    const dirty = () => title.value.trim() !== log.title || body.value.trim() !== log.text.trim() || vis !== (log.visibility === 'private' ? 'private' : 'public');
+    const sync = () => { go.disabled = !title.value.trim() || !dirty(); };
+    title.addEventListener('input', sync);
+    body.addEventListener('input', sync);
+    root.querySelectorAll('[data-vis]').forEach((b) => b.addEventListener('click', () => {
+      vis = b.dataset.vis;
+      seg.classList.toggle('is-private', vis === 'private');
+      root.querySelectorAll('[data-vis]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.vis === vis)));
+      sync();
+    }));
+    root.querySelector('.rc-back').addEventListener('click', () => WL.back('/log/' + log.id));
+    go.addEventListener('click', () => {
+      if (go.disabled) return;
+      log.title = title.value.trim();
+      log.text = body.value.trim();
+      log.visibility = vis;
+      WL.hx.later('로그를 수정했어요', { noNav: true });
+      WL.back('/log/' + log.id);
+    });
+  }
+
   /* ========== ② 코스와 사진 · ③ 글쓰기 ========== */
   WL.screens.recordCourse = {
     title: '로그 남기기',
     nav: null,
-    render() {
+    render(params = {}) {
+      const editLog = params.edit && WL.find.myLog(params.edit);
+      if (editLog) return editRender(editLog);
+      /* 이미 등록한 초안이면 새로 시작 */
+      if (WL.rcDraft && WL.rcDraft.savedId) WL.rcDraft = null;
       const d = draft();
       return `<div class="rc-course is-edit">
         <header class="rc-head">
@@ -273,7 +363,9 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
         <div class="rc-foot"><button type="button" class="pill ink block rc-go">다음</button></div>
       </div>`;
     },
-    mount(root) {
+    mount(root, params = {}) {
+      const editLog = params.edit && WL.find.myLog(params.edit);
+      if (editLog) { editMount(root, editLog); return; }
       const d = draft();
       const lo = d.from * 60;
       const hi = d.to * 60;
@@ -709,6 +801,7 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
     nav: null,
     render() {
       const d = draft();
+      commit(d);
       return `<div class="rc-done">
         <div class="rc-done-top"><a class="icon-btn" href="#/map" aria-label="닫기">${icon('close')}</a></div>
         <div class="rc-stage"><div class="rc-stage-in"></div></div>
@@ -717,11 +810,12 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
           <p class="t-subhead">${esc(d.title || REC.title)}</p>
           <p class="rc-wmeta">${range(d)}${stats(d, true)}</p>
         </div>
-        <div class="rc-done-foot"><a class="pill ink block" href="#/log/l-1118">로그 보기</a></div>
+        <div class="rc-done-foot"><button type="button" class="pill ink block rc-view">로그 보기</button></div>
       </div>`;
     },
     mount(root) {
       const d = draft();
+      root.querySelector('.rc-view').addEventListener('click', () => WL.reset('/log/' + d.savedId));
       const stage = root.querySelector('.rc-stage-in');
       const W = stage.clientWidth;
       const H = stage.clientHeight;

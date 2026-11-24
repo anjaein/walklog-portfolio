@@ -102,6 +102,8 @@ WL.screens = WL.screens || {};
     const prev = trail.pop();
     WL.go(prev || fallback);
   };
+  /* 흐름을 끝내고 새로 시작할 때(예: 등록 완료 → 로그 보기): 지나온 길을 비워서 뒤로 가기가 끝난 흐름으로 돌아가지 않게 한다 */
+  WL.reset = (path) => { trail.length = 0; WL.go(path); };
   WL.routes = routes;
 
   window.addEventListener('hashchange', render);

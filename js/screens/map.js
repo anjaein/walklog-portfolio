@@ -429,13 +429,32 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
   }
 
   /* ========== ③ 지도 화면 ========== */
+  /* 로그 상세의 '지도에서 보기'(?log= / ?post=)로 들어오면 그 코스를 띄운다. 카드 목록에 없으면 맨 앞에 끼워 넣는다 */
+  function focusCard(ref) {
+    if (!ref) return false;
+    const list = cardList();
+    let i = list.findIndex((c) => c.id === ref);
+    if (i < 0) {
+      const c = courseOf(ref);
+      if (!c) return false;
+      list.unshift(Object.assign({ kind: c.mine ? '내 로그' : '보는 코스', group: -1, nth: 1, count: 1, note: '' }, c));
+      i = 0;
+    }
+    state.idx = i;
+    return true;
+  }
+
   WL.screens.mapView = {
     title: '지도 화면',
     nav: 'map',
     render(params) {
-      return `<div class="mp-view">${viewScene({ empty: !!params.empty, lowered: !!params.empty || params.sheet === 'low', animate: true })}</div>`;
+      const focused = !params.empty && focusCard(params.log || params.post);
+      const back = focused ? `<button type="button" class="icon-btn is-float mp-vback" aria-label="뒤로">${icon('back', 22)}</button>` : '';
+      return `<div class="mp-view">${back}${viewScene({ empty: !!params.empty, lowered: !!params.empty || params.sheet === 'low', animate: true })}</div>`;
     },
     mount(root, params) {
+      const vback = root.querySelector('.mp-vback');
+      if (vback) vback.addEventListener('click', () => WL.back(params.log ? '/log/' + params.log : '/post/' + params.post));
       const sheet = root.querySelector('.mp-sheet');
       const sh = bindSheet(sheet);
       if (params.empty) return () => sh.off();

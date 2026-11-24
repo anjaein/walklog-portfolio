@@ -87,7 +87,7 @@ window.WL = window.WL || {}; WL.screens = WL.screens || {};
         <div class="lg-spacer"></div>
         <section class="lg-sheet" aria-label="${esc(log.title)}, ${+y}년 ${+m}월 ${+d}일">
           <i class="sheet-handle"></i>
-          <p class="t-body lg-text">${esc(log.text)}</p>
+          ${log.text ? `<p class="t-body lg-text">${esc(log.text)}</p>` : ''}
           <div class="lg-map">
             ${WL.ui.mapBg(log.id.length + +d, { water: log.shape === 'hangang' || log.shape === 'river' ? 78 : 0 })}
             <div class="lg-map-course">${WL.ui.course(log.shape, { color: 'var(--ink)', width: 4, pad: 10, thumbs: thumbs.map((p) => ({ src: p.src, at: p.at })) })}</div>
