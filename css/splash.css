@@ -1,0 +1,13 @@
+/* 첫 실행 스플래시: 안드로이드 스플래시와 같은 비율 (288dp 아이콘 / 412dp 화면 ≈ 0.70) */
+.splash {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  cursor: pointer;
+}
+.splash svg { width: 70%; height: auto; display: block; }
+.splash.is-leaving { opacity: 0; transition: opacity 280ms var(--ease-out); pointer-events: none; }
+.splash-seen .splash { display: none; }

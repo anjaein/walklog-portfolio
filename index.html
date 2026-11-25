@@ -5,19 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#FBF8F2">
   <title>WalkLog</title>
+  <link rel="icon" href="assets/brand/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="assets/fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Doto:wght@700;900&family=Red+Hat+Display:wght@500;700;800&display=swap">
+  <script>
+    // 스플래시는 브라우저마다 한 번만: 첫 페인트 전에 정해서 재방문 때 깜빡임이 없게 한다
+    try {
+      if (localStorage.getItem('walklog.splashSeen')) document.documentElement.classList.add('splash-seen');
+      else localStorage.setItem('walklog.splashSeen', '1');
+    } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/screens-home.css">
   <link rel="stylesheet" href="css/screens-map.css">
   <link rel="stylesheet" href="css/screens-explore.css">
+  <link rel="stylesheet" href="css/splash.css">
 </head>
 <body>
   <aside class="screen-index" id="screen-index" aria-label="화면 목록"></aside>
-  <div class="app" id="app"></div>
+  <div class="app" id="app">
+    <div class="splash" id="splash" aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none">
+        <g transform="translate(0 -0.6) translate(24 24.6) scale(0.92) translate(-24 -24.6)">
+          <path d="M17.95 37.27 L10.4 27.8 L13.09 16 L24 10.75 L34.91 16 L37.6 27.8 L30.05 37.27 L25.21 37.27" style="stroke: var(--cream)" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="17.95" cy="37.27" r="2.89" style="fill: var(--cream)"/>
+          <circle cx="25.21" cy="37.27" r="2.45" style="fill: var(--ink); stroke: var(--cream)" stroke-width="1.87"/>
+        </g>
+      </svg>
+    </div>
+  </div>
 
   <script src="js/data.js"></script>
   <script src="js/ui.js"></script>
@@ -31,5 +52,6 @@
   <script src="js/screens/onboarding.js"></script>
   <script src="js/screens/notfound.js"></script>
   <script src="js/router.js"></script>
+  <script src="js/splash.js"></script>
 </body>
 </html>
